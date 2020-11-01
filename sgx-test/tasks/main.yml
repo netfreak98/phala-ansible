@@ -1,0 +1,92 @@
+---
+  - name: Copy SGX testing tools and scripts
+    action: copy
+    args:
+      src: "{{ role_path }}/files/{{ item }}"
+      dest: "{{ install_path }}/{{ item }}"
+      owner: root
+      group: root
+      mode: 0755
+      backup: no
+    with_items:
+      - sgx_test
+      - phala_test_app
+      - enclave.signed.so
+      - console.sh
+      - ra-report-validator
+
+  - name: Running SGX test
+    command: "{{ install_path }}/sgx_test"
+    register: sgx_test_result
+
+  - name: Collecting SGX test results
+    debug: msg={{ sgx_test_result.stdout_lines }}
+
+  - name: Check if SGX device exists
+    stat: path=/dev/isgx
+    register: isgxdev_result
+
+  - name: STOP if SGX device is not present
+    fail: msg="The SGX device is not present"
+    when: not isgxdev_result.stat.exists
+
+  - name: Writing PHALA key
+    copy: 
+      content="{{ phala_key }}" 
+      dest="{{ install_path }}/key.txt"
+
+  - name: Writing PHALA SPID
+    copy:
+      content="{{ phala_spid }}"
+      dest="{{ install_path }}/spid.txt"
+
+  - name: Get running PHALA processes
+    shell: "ps -ef | grep -v grep | grep -w phala_test_app | awk '{print $2}'"
+    register: running_processes
+
+  - name: Kill running PHALA processes
+    shell: "kill -9 {{ item }}"
+    with_items: "{{ running_processes.stdout_lines }}"
+
+  - name: Start PHALA Test Application
+    shell: "{{ install_path }}/phala_test_app > /tmp/phala_app.log 2>&1 &"
+    async: 60
+    poll: 0
+    args:
+      chdir: "{{ install_path }}"
+
+  - name: Run PHALA init
+    shell: "{{ install_path }}/console.sh init"
+    register: init_result
+    args:
+      chdir: "{{ install_path }}"
+
+  - name: Collecting PHALA init results
+    set_fact:
+         init_result_json: "{{ init_result.stdout | from_json }}"
+
+  - name: Displaying PHALA init results for debugging
+    debug: msg="{{ init_result.stdout | from_json }}"
+
+  - name: Run PHALA RA validation tool
+    shell: "{{ install_path }}/ra-report-validator '{{ init_result_json['attestation']['payload']['report'] }}' '{{ init_result_json['attestation']['payload']['signature'] }}' '{{ init_result_json['attestation']['payload']['signing_cert'] }}'"
+    register: ra_validation_report
+
+  - name: STOP installation if RA validation on CERTIFICATE did not pass
+    fail: msg="The CERTIFICATE did not pass validation"
+    when: ra_validation_report.stdout is not search('Cert is good')
+
+  - name: STOP installation if RA validation on SIGNATURE did not pass
+    fail: msg="The SIGNATURE did not pass validation"
+    when: ra_validation_report.stdout is not search('Signature good')
+
+  - name: STOP installation if RA validation on ENCLAVE STATUS did not pass
+    fail: msg="The ENCLAVE STATUS did not pass validation"
+    when: ra_validation_report.stdout is not search('isvEnclaveQuoteStatus = OK') and
+          ra_validation_report.stdout is not search('isvEnclaveQuoteStatus = GROUP_OUT_OF_DATE') and
+          ra_validation_report.stdout is not search('isvEnclaveQuoteStatus = CONFIGURATION_NEEDED') and
+          ra_validation_report.stdout is not search('isvEnclaveQuoteStatus = SW_HARDENING_NEEDED') and
+          ra_validation_report.stdout is not search('isvEnclaveQuoteStatus = CONFIGURATION_AND_SW_HARDENING_NEEDED') 
+
+
+

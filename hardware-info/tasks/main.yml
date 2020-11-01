@@ -1,0 +1,22 @@
+---
+  - name: Collect motherboard information (vendor)
+    command: "cat /sys/devices/virtual/dmi/id/board_vendor" 
+    register: board_vendor
+
+  - name: Collect motherboard information (model)
+    command: "cat /sys/devices/virtual/dmi/id/board_name"
+    register: board_name
+
+  - name: Collect motherboard information (serial)
+    command: "cat /sys/devices/virtual/dmi/id/board_serial"
+    register: board_serial
+
+  - debug:
+      msg:
+      - "Operating System:           {{ ansible_facts['lsb']['description'] }} ({{ ansible_facts['lsb']['codename'] }}) with architecture {{ ansible_facts['architecture'] }}"
+      - "Kernel:                     {{ ansible_facts['kernel'] }}"
+      - "System date and time:       {{ ansible_facts['date_time']['iso8601'] }} in timezone {{ ansible_facts['date_time']['tz'] }} {{ ansible_facts['date_time']['tz_offset'] }}"
+      - "Motherboard:                {{ board_vendor.stdout }} {{ board_name.stdout }} serial {{ board_serial.stdout }} with BIOS version {{ ansible_facts['bios_version'] }} from {{ ansible_facts['bios_date'] }}"
+      - "Processor:                  {{ ansible_facts['processor'][1] }} {{ ansible_facts['processor'][2] }} with {{ ansible_facts['processor_count'] }} socket(s) and {{ ansible_facts['processor_cores'] }} core(s)"
+      - "Memory:                     {{ ansible_facts['memtotal_mb'] }}mb available for Operating System"
+

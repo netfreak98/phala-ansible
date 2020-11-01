@@ -1,0 +1,6 @@
+---
+ - name: Check system requirements
+   fail: msg="The hosts Operating System is not supported"
+   when: ansible_distribution != 'Ubuntu' and ansible_distribution_release != 'bionic'
+
+

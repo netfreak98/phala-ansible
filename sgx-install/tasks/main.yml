@@ -1,0 +1,104 @@
+---
+  - name: Create installation directory
+    file: 
+      path={{ install_path }}
+      state=directory 
+      mode=0755
+
+  - name: Copy prebuilt Intel SGX packages
+    action: copy
+    args:
+      src: "{{ role_path }}/files/{{ item }}.deb"
+      dest: "{{ install_path }}/{{ item }}.deb"
+      owner: root
+      group: root
+      mode: 0644
+      backup: no
+    with_items:
+      - libsgx-enclave-common
+      - libsgx-enclave-common-dev
+      - libsgx-enclave-common-dbgsym
+
+  - name: Install prebuilt Instal SGX packages
+    action: shell dpkg-query -f '${Package}\n' -W {{ item }} || dpkg -i {{ install_path }}/{{ item }}.deb
+    register: deb
+    changed_when: deb.stdout != item
+    with_items:
+      - libsgx-enclave-common
+      - libsgx-enclave-common-dev
+      - libsgx-enclave-common-dbgsym
+
+  - name: Copy prebuilt Intel SGX installers
+    action: copy
+    args:
+      src: "{{ role_path }}/files/{{ item }}"
+      dest: "{{ install_path }}/{{ item }}"
+      owner: root
+      group: root
+      mode: 0755
+      backup: no
+    with_items:
+      - driver.bin
+      - sdk.bin
+      - sgx_enable
+      - sgx_test
+
+  - name: Running SGX test
+    command: "{{ install_path }}/sgx_test"
+    register: sgx_test_result
+
+  - name: Collecting SGX test results
+    debug: msg={{ sgx_test_result.stdout_lines }}
+
+  - name: If SGX test was succesfull driver was already installed
+    set_fact:
+      sgx_working: true
+    when: sgx_test_result.stdout_lines is search('SGX HW TEST SUCCESSED')
+
+  - debug: msg="SGX is already working on this system, skipping some installation steps"
+    when: sgx_working|bool == 'false'
+
+  - name: Install Intel SGX driver module
+    command: "{{ install_path }}/driver.bin"
+    when: sgx_working|bool == 'false'
+
+  - name: Check if SDK install was completed
+    stat: path=/opt/sgxsdk/environment
+    register: sdk_install_result
+
+  - name: Install Intel SDK package
+    expect:
+      command: "{{ install_path }}/sdk.bin"
+      responses:
+        current: no
+        directory: /opt
+    when: not sdk_install_result.stat.exists
+
+  - name: Check if SDK install was completed
+    stat: path=/opt/sgxsdk/environment
+    register: sdk_install_result
+
+  - name: Check SDK installation results
+    fail: msg="The SDK installation was not successfull"
+    when: not sdk_install_result.stat.exists
+
+  - name: Enabling SGX in BIOS
+    command: "{{ install_path }}/sgx_enable"
+    register: sgx_enable_result
+    when: sgx_working|bool == 'false'
+
+  - debug: msg={{ sgx_enable_result.stdout_lines }}
+    when: sgx_working|bool == 'false'
+
+  - name: Rebooting to finish required changes to enable SGX in BIOS
+    reboot:
+      msg: "Reboot initiated by Ansible due to kernel updates"
+      connect_timeout: 5
+      reboot_timeout: 300
+      pre_reboot_delay: 0
+      post_reboot_delay: 30
+      test_command: uptime
+    when: sgx_working|bool == 'false' and 
+          sgx_enable_result.stdout_lines is search('will be enabled after the system is rebooted')
+
+
