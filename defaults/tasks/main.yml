@@ -46,6 +46,7 @@
           - jq
           - zip
           - unzip
+          - python-pexpect
         state: latest
         update_cache: yes
 

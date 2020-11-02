@@ -25,10 +25,17 @@ Requirements:
 - Hardware that supports SGX, this script does NOT support software mode
 - Each CPU core must be met with 2GB of system memory (if 4 CPU then 8 GB of RAM is needed)
 
+
 Running remotely:
 
-ansible-playbook -i miners install-remote.yml
+create a file inside the base directory called 'miners', and inside place (you can add as many IP address
+as you want ... but you cannot use localhost, a remote install is required due to required reboots):
 
-Running locally:
+```
+[miners]
+10.80.0.201
+10.81.2.303
+```
 
-ansible-playbook install-localhost.yml
+ansible-playbook -i miners install.yml
+
