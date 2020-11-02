@@ -1,2 +1,4 @@
+# In this file you can define IP addresses or hostnames to install this playbook on
+
 [miners]
 10.80.0.100

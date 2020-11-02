@@ -27,4 +27,8 @@ Requirements:
 
 Running remotely:
 
+ansible-playbook -i miners install-remote.yml
+
 Running locally:
+
+ansible-playbook install-localhost.yml

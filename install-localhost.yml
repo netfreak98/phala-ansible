@@ -1,6 +1,6 @@
 ---
-- hosts: miners
-  remote_user: ubuntu
+- hosts: localhost
+  connection: local
   become: yes
 
   vars_files:
@@ -10,7 +10,7 @@
   roles:
     - precheck
     - hardware-info
-#    - defaults
-#    - sgx-install
-#    - sgx-test
+    - defaults
+    - sgx-install
+    - sgx-test
 
