@@ -53,6 +53,8 @@
           - zip
           - unzip
           - python-pexpect
+          - python3-pexpect
+          - dkms
         state: latest
         update_cache: yes
 

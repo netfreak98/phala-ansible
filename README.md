@@ -28,14 +28,17 @@ Requirements:
 
 Running remotely:
 
-create a file inside the base directory called 'miners', and inside place (you can add as many IP address
+create a file inside the base directory called 'hosts', and inside place (you can add as many IP address
 as you want ... but you cannot use localhost, a remote install is required due to required reboots):
 
 ```
 [miners]
 10.80.0.201
-10.81.2.303
+10.81.2.203
+
+[miners:vars]
+ansible_python_interpreter=/usr/bin/python3
 ```
 
-ansible-playbook -i miners install.yml
+ansible-playbook -i hosts install.yml
 
