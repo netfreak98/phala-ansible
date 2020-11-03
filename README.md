@@ -42,3 +42,12 @@ ansible_python_interpreter=/usr/bin/python3
 
 ansible-playbook -i hosts install.yml
 
+TODO:
+- Add a driver selection
+- Make docker install default=true
+  - Add variable for docker user/key
+  - install docker containers
+- Make systemd install default=false
+  - add versions for node, runtime and host
+  - combined with systemd and configs
+
