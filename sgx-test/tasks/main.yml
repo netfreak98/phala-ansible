@@ -88,5 +88,12 @@
           ra_validation_report.stdout is not search('isvEnclaveQuoteStatus = SW_HARDENING_NEEDED') and
           ra_validation_report.stdout is not search('isvEnclaveQuoteStatus = CONFIGURATION_AND_SW_HARDENING_NEEDED') 
 
+  - name: Get running PHALA processes
+    shell: "ps -ef | grep -v grep | grep -w phala_test_app | awk '{print $2}'"
+    register: running_processes
+
+  - name: Kill running PHALA processes
+    shell: "kill -9 {{ item }}"
+    with_items: "{{ running_processes.stdout_lines }}"
 
 

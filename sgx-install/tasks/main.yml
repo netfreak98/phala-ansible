@@ -5,28 +5,30 @@
       state=directory 
       mode=0755
 
-  - name: Copy prebuilt Intel SGX packages
-    action: copy
-    args:
-      src: "{{ role_path }}/files/{{ item }}.deb"
-      dest: "{{ install_path }}/{{ item }}.deb"
-      owner: root
-      group: root
-      mode: 0644
-      backup: no
-    with_items:
-      - libsgx-enclave-common
-      - libsgx-enclave-common-dev
-      - libsgx-enclave-common-dbgsym
+  - name: Add Intel Apt signing key
+    apt_key:
+      url: https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key
+      state: present
 
-  - name: Install prebuilt Instal SGX packages
-    action: shell dpkg-query -f '${Package}\n' -W {{ item }} || dpkg -i {{ install_path }}/{{ item }}.deb
-    register: deb
-    changed_when: deb.stdout != item
-    with_items:
-      - libsgx-enclave-common
-      - libsgx-enclave-common-dev
-      - libsgx-enclave-common-dbgsym
+  - name: Add Intel Apt repository
+    apt_repository:
+      repo: deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu bionic main
+      state: present
+
+
+  - name: "Install required tools and packages"
+    apt:
+      name:
+        - libsgx-enclave-common-dbgsym
+        - libsgx-enclave-common
+        - libsgx-enclave-common-dev
+        - libsgx-launch 
+        - libsgx-urts
+        - linux-base-sgx
+        - libsgx-dcap-ql
+        - libsgx-uae-service
+      state: latest
+      update_cache: yes
 
   - name: Copy prebuilt Intel SGX installers
     action: copy
@@ -38,8 +40,8 @@
       mode: 0755
       backup: no
     with_items:
-      - driver.bin
-      - sdk.bin
+      - sgx_linux_x64_driver_1.36.bin
+      - sgx_linux_x64_sdk_2.11.100.2.bin
       - sgx_enable
       - sgx_test
 
@@ -58,9 +60,24 @@
   - debug: msg="SGX is already working on this system, skipping some installation steps"
     when: sgx_working|bool == 'false'
 
+  - name: Check if SGX device exists
+    stat: path=/dev/isgx
+    register: isgxdev_result
+
   - name: Install Intel SGX driver module
-    command: "{{ install_path }}/driver.bin"
-    when: sgx_working|bool == 'false'
+    command: "{{ install_path }}/sgx_linux_x64_driver_1.36.bin"
+    when: sgx_working|bool == 'false' or
+          not isgxdev_result.stat.exists
+    
+  - name: Rebooting to activate SGX driver
+    reboot:
+      msg: "Reboot initiated by Ansible due to driver install"
+      connect_timeout: 5
+      reboot_timeout: 300
+      pre_reboot_delay: 0
+      post_reboot_delay: 30
+      test_command: uptime
+    when: not isgxdev_result.stat.exists
 
   - name: Check if SDK install was completed
     stat: path=/opt/sgxsdk/environment
@@ -68,7 +85,7 @@
 
   - name: Install Intel SDK package
     expect:
-      command: "{{ install_path }}/sdk.bin"
+      command: "{{ install_path }}/sgx_linux_x64_sdk_2.11.100.2.bin"
       responses:
         current: no
         directory: /opt
@@ -92,7 +109,7 @@
 
   - name: Rebooting to finish required changes to enable SGX in BIOS
     reboot:
-      msg: "Reboot initiated by Ansible due to kernel updates"
+      msg: "Reboot initiated by Ansible due to enable SGX in BIOS"
       connect_timeout: 5
       reboot_timeout: 300
       pre_reboot_delay: 0

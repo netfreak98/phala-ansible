@@ -11,6 +11,28 @@
     command: "cat /sys/devices/virtual/dmi/id/board_serial"
     register: board_serial
 
+  - name: Create installation directory
+    file:
+      path={{ install_path }}
+      state=directory
+      mode=0755
+
+  - name: Copy prebuilt Intel SGX installers
+    action: copy
+    args:
+      src: "{{ role_path }}/files/{{ item }}"
+      dest: "{{ install_path }}/{{ item }}"
+      owner: root
+      group: root
+      mode: 0755
+      backup: no
+    with_items:
+      - oesgx
+
+  - name: Collect CPU information
+    command: "{{ install_path }}/oesgx"
+    register: oesgx
+
   - debug:
       msg:
       - "Operating System:           {{ ansible_facts['lsb']['description'] }} ({{ ansible_facts['lsb']['codename'] }}) with architecture {{ ansible_facts['architecture'] }}"
@@ -19,4 +41,5 @@
       - "Motherboard:                {{ board_vendor.stdout }} {{ board_name.stdout }} serial {{ board_serial.stdout }} with BIOS version {{ ansible_facts['bios_version'] }} from {{ ansible_facts['bios_date'] }}"
       - "Processor:                  {{ ansible_facts['processor'][1] }} {{ ansible_facts['processor'][2] }} with {{ ansible_facts['processor_count'] }} socket(s) and {{ ansible_facts['processor_cores'] }} core(s)"
       - "Memory:                     {{ ansible_facts['memtotal_mb'] }}mb available for Operating System"
+      - "CPU modes:	             {{ oesgx.stdout_lines }}"
 

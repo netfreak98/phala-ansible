@@ -13,4 +13,4 @@
     - defaults
     - sgx-install
     - sgx-test
-
+    - docker
