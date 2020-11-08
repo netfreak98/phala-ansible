@@ -55,6 +55,7 @@
           - python-pexpect
           - python3-pexpect
           - dkms
+          - cpufrequtils
         state: latest
         update_cache: yes
 
@@ -71,5 +72,40 @@
         post_reboot_delay: 30
         test_command: uptime
       when: reboot_required_file.stat.exists
+
+    - name: update cpufrequtils configuration file
+      template:
+        src: etc/default/cpufrequtils.j2
+        dest: /etc/default/cpufrequtils
+
+    - name: enable cpufrequtils
+      service:
+        name: cpufrequtils
+        enabled: yes
+
+    - name: check if cpufreq kernel module is enabled
+      stat:
+        path: /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+      register: sysfs_file
+
+    - name: check current governor
+      command: /bin/cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+      register: current_governor
+      when: sysfs_file.stat.exists
+
+    - name: disable ondemand service
+      service:
+        name: ondemand
+        state: stopped
+        enabled: no
+
+    - name: bounce service if necessary
+      service:
+        name: cpufrequtils
+        state: restarted
+      when:
+        - sysfs_file.stat.exists
+        - current_governor.stdout != cpufreq_governor 
+
 
 

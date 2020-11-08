@@ -1,2 +1,3 @@
 ---
-# vars file for defaults
+cpufreq_enable: True
+cpufreq_governor: "performance"
