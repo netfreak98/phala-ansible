@@ -23,12 +23,17 @@
     debug: msg={{ sgx_test_result.stdout_lines }}
 
   - name: Check if SGX device exists
+    stat: path=/dev/sgx
+    register: sgxdev_result
+
+  - name: Check if SGX legacy device exists
     stat: path=/dev/isgx
     register: isgxdev_result
 
   - name: STOP if SGX device is not present
     fail: msg="The SGX device is not present"
-    when: not isgxdev_result.stat.exists
+    when: not isgxdev_result.stat.exists and
+          not sgxdev_result.stat.exists
 
   - name: Writing PHALA key
     copy: 
