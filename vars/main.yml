@@ -1,2 +1,4 @@
 ---
 install_path: /opt/phala
+sgx_driver: dcap
+#sgx_driver: legacy

@@ -25,6 +25,9 @@ Requirements:
 - Hardware that supports SGX, this script does NOT support software mode
 - Each CPU core must be met with 2GB of system memory (if 4 CPU then 8 GB of RAM is needed)
 
+inside vars/main.yml
+- select a driver (legacy or dcap)
+- select a run method (docker or systemd)
 
 Running remotely:
 
@@ -43,7 +46,6 @@ ansible_python_interpreter=/usr/bin/python3
 ansible-playbook -i hosts install.yml
 
 TODO:
-- Add a driver selection
 - Make docker install default=true
   - Add variable for docker user/key
   - install docker containers
