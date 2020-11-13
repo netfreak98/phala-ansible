@@ -58,6 +58,7 @@
           - cpufrequtils
           - lldpd
           - gpm
+          - ethtool
         state: latest
         update_cache: yes
 
@@ -109,5 +110,33 @@
         - sysfs_file.stat.exists
         - current_governor.stdout != cpufreq_governor 
 
+    - name: Create systemd service for Wake-on-LAN persistance
+      template:
+        src: etc/systemd/system/wol.service.j2
+        dest: /etc/systemd/system/wol.service
+        mode: 0664
+
+    - name: Start Wake-on-LAN persistance
+      systemd:
+        name: "wol.service"
+        state: restarted
+        daemon_reload: yes
+
+    - name: Enable Wake-on-LAN persistance at boot
+      systemd:
+        name: "wol.service"
+        enabled: True
+
+    - name: Enable Wake-on-LAN in Netplan.io
+      lineinfile:
+        path: /etc/netplan/50-cloud-init.yaml
+        insertafter: "eno1:"
+        line: '            wakeonlan: true'
+
+    - name: Enable Wake-on-LAN in Netplan.io
+      lineinfile:
+        path: /etc/netplan/50-cloud-init.yaml
+        insertafter: "eno1:"
+        line: '            emit-lldp: true'
 
 

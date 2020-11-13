@@ -11,6 +11,6 @@
     - precheck
     - hardware-info
     - defaults
-    - sgx-install
-    - sgx-test
-    - docker
+#    - sgx-install
+#    - sgx-test
+#    - docker
