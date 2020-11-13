@@ -139,4 +139,43 @@
         insertafter: "eno1:"
         line: '            emit-lldp: true'
 
+    - name: "Check if GRUB is installed"
+      stat:
+        path: /etc/default/grub
+      changed_when: false
+      check_mode: no
+      register: grubinstalled
+
+    - name: Update GRUB_TIMEOUT
+      lineinfile:
+        dest: /etc/default/grub
+        line: "GRUB_TIMEOUT=3"
+        regexp: '^GRUB_TIMEOUT.*$'
+        state: present
+      when:
+        grubinstalled.stat.exists
+
+    - name: Update GRUB_RECORDFAIL_TIMEOUT
+      lineinfile:
+        dest: /etc/default/grub
+        line: "GRUB_RECORDFAIL_TIMEOUT=3"
+        regexp: '^GRUB_RECORDFAIL_TIMEOUT.*$'
+        state: present
+      when:
+        grubinstalled.stat.exists
+
+    - name: Update EFI with new GRUB values
+      command: "/usr/sbin/update-grub2"
+
+    - name: Fix EFI missing default for default boot option
+      copy:
+        src: /boot/efi/EFI/ubuntu//{{ item }}
+        dest: /boot/efi/EFI/BOOT/{{ item }}
+        remote_src: yes
+      with_items:
+        - BOOTX64.CSV
+        - grub.cfg
+        - grubx64.efi
+        - mmx64.efi
+        - shimx64.efi
 
