@@ -60,7 +60,9 @@
       pre_reboot_delay: 0
       post_reboot_delay: 30
       test_command: uptime
-    when: sgx_enable_result.stdout_lines is search('will be enabled after the system is rebooted')
+    when: sgx_enable_result.stdout_lines is search('will be enabled after the system is rebooted') or
+          sgx_enable_result.stdout_lines is search('Please reboot your system to finish')
+
 
   - name: Running SGX test
     command: "{{ install_path }}/sgx_test"

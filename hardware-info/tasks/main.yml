@@ -28,6 +28,25 @@
       backup: no
     with_items:
       - oesgx
+      - sgx_enable
+      - sgx_test
+
+  - name: Enabling SGX in BIOS
+    command: "{{ install_path }}/sgx_enable"
+    register: sgx_enable_result
+
+  - debug: msg={{ sgx_enable_result.stdout_lines }}
+
+  - name: Rebooting to finish required changes to enable SGX in BIOS
+    reboot:
+      msg: "Reboot initiated by Ansible due to enable SGX in BIOS"
+      connect_timeout: 5
+      reboot_timeout: 300
+      pre_reboot_delay: 0
+      post_reboot_delay: 30
+      test_command: uptime
+    when: sgx_enable_result.stdout_lines is search('will be enabled after the system is rebooted') or
+          sgx_enable_result.stdout_lines is search('Please reboot your system to finish')
 
   - name: Collect CPU information
     command: "{{ install_path }}/oesgx"

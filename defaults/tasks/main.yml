@@ -57,6 +57,7 @@
           - dkms
           - cpufrequtils
           - lldpd
+          - gpm
         state: latest
         update_cache: yes
 
