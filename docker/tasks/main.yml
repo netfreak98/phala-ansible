@@ -20,3 +20,84 @@
         state: latest
         update_cache: yes
 
+    - name: Copy docker daemon json
+      action: copy
+      register: docker_config
+      args:
+        src: "{{ role_path }}/files/{{ item }}"
+        dest: "/etc/docker/{{ item }}"
+        owner: root
+        group: root
+        mode: 0644
+        backup: no
+      with_items:
+        - daemon.json
+
+    - name: restart docker service
+      service:
+        name: docker
+        state: restarted
+      when: docker_config.changed
+
+    - name: Create installation directory
+      file:
+        path=/opt/deploy
+        state=directory
+        mode=0755
+
+    - name: Copy docker composer file
+      action: copy
+      args:
+        src: "{{ role_path }}/files/{{ item }}"
+        dest: "/opt/deploy/{{ item }}"
+        owner: root
+        group: root
+        mode: 0644
+        backup: no
+      with_items:
+        - docker-compose.yml
+
+    - name: Docker pull images
+      shell: "/usr/bin/docker-compose pull"
+      register: docker_pull_result
+      args:
+        chdir: "/opt/deploy"
+
+    - name: "Augment hostname for POC3"
+      set_fact: worker_name=poc3-{{ ansible_hostname }}
+
+    - name: "Code for this worker"
+      debug: msg={{ codes[worker_name] }}
+
+    - name: "check if init was already done"
+      stat:
+        path: /opt/deploy/init-has-run
+      register: init_status
+
+    - name: "Set status is init"
+      file: path=/opt/deploy/init-has-run state=touch
+      when: init_status.stat.exists == False
+
+    - name: Docker initialize
+      shell: "/usr/bin/docker-compose run --rm daemon rake daemon:init ENDPOINT=ws://10.87.0.52:9292 CODE={{ codes[worker_name] }}"
+      register: docker_pull_result
+      args:
+        chdir: "/opt/deploy"
+      when: init_status.stat.exists == False
+
+    - name: "Start pRuntime"
+      shell: "/usr/bin/docker-compose up -d pruntime"
+      register: docker_pull_result
+      args:
+        chdir: "/opt/deploy"
+
+    - name: "Wait for pRuntime to settle"
+      pause:
+        seconds: 15
+
+    - name: "Start worker framework"
+      shell: "/usr/bin/docker-compose up -d"
+      register: docker_pull_result
+      args:
+        chdir: "/opt/deploy"
+

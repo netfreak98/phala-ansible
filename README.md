@@ -43,6 +43,13 @@ as you want ... but you cannot use localhost, a remote install is required due t
 ansible_python_interpreter=/usr/bin/python3
 ```
 
+create a vars/codes.yml, like:
+```
+---
+codes:
+  poc3-myhostname: this-is-my-uuid-code
+```
+
 ansible-playbook -i hosts install.yml
 
 TODO:

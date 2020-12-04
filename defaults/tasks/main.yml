@@ -5,6 +5,12 @@
         state: stopped
         enabled: no
 
+    - name: Disable unattended APT updates
+      systemd:
+        name: apt-daily-upgrade.timer
+        state: stopped
+        enabled: no
+
     - name: "Update repository caches"
       apt: 
         update_cache=yes 
@@ -126,18 +132,6 @@
       systemd:
         name: "wol.service"
         enabled: True
-
-    - name: Enable Wake-on-LAN in Netplan.io
-      lineinfile:
-        path: /etc/netplan/50-cloud-init.yaml
-        insertafter: "eno1:"
-        line: '            wakeonlan: true'
-
-    - name: Enable Wake-on-LAN in Netplan.io
-      lineinfile:
-        path: /etc/netplan/50-cloud-init.yaml
-        insertafter: "eno1:"
-        line: '            emit-lldp: true'
 
     - name: "Check if GRUB is installed"
       stat:
