@@ -79,7 +79,7 @@
       when: init_status.stat.exists == False
 
     - name: Docker initialize
-      shell: "/usr/bin/docker-compose run --rm daemon rake daemon:init ENDPOINT=ws://10.87.0.52:9292 CODE={{ codes[worker_name] }}"
+      shell: "/usr/bin/docker-compose run --rm daemon rake daemon:init ENDPOINT=ws://10.80.0.172:9292 CODE={{ codes[worker_name] }}"
       register: docker_pull_result
       args:
         chdir: "/opt/deploy"
